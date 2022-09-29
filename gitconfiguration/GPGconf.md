@@ -22,6 +22,46 @@ Prints the GPG key ID, in ASCII armor format
 从 GPG 密钥列表中复制您想要使用的 GPG 密钥 ID 的长形式。 在本例中，GPG 密钥 ID 为 3AA5C34371567BD2：
 若要在 Git 中设置 GPG 签名主键，请粘贴下面的文本，替换要使用的 GPG 主键 ID。 在本例中，GPG 密钥 ID 为 3AA5C34371567BD2：
 `git config --global user.signingkey 3AA5C34371567BD2`
+可以设置Git为每次commit自动要求签名
+`git config --global commit.gpgsign true`
+信任Github的GPG密钥
+git log --show-signature试试查看本地的某个Git仓库的commit记录和签名信息：
+```
+$ git log --show-signature
+# some output is omitted
+commit ec37d4af120a69dafa077052cfdf4f5e33fa1ef3 (HEAD -> master)
+gpg: Signature made 2019年08月 4日 12:52:29
+gpg:                using RSA key 1BA074F113915706D141348CDC3DB5873563E6B2
+gpg: Good signature from "fortest <test@test.com>" [ultimate]
+Author: keithnull <keith1126@126.com>
+Date:   Sun Aug 4 12:52:29 2019 +0800
+
+    test GPG
+
+commit 6937d638d950362f73bfbf28bc4a39d1700bf26b
+gpg: Signature made 2019年07月24日 15:58:46
+gpg:                using RSA key 4AEE18F83AFDEB23
+gpg: Can't check signature: No public key
+Author: Keith Null <20233656+keithnull@users.noreply.github.com>
+Date:   Wed Jul 24 15:58:46 2019 +0800
+
+    Initial commit
+```
+可以发现，虽然所有的commit在Github中查看都是Verified，但是有一些比较特殊：在Github网页端进行的操作，比如创建仓库。这些commit并没有用我们之前生成的密钥进行签名，而是由Github代为签名了。这样的结果就是，我们本地无法确认这些签名的真实性。
+
+为了解决这个问题，我们需要导入并信任Github所用的GPG密钥。
+导入Github公钥
+`curl https://github.com/web-flow.gpg | gpg --import`
+然后是信任（用自己的密钥为其签名验证，需要输入密码）：
+```gpg --sign-key 4AEE18F83AFDEB23```
+[知乎使用 GPG Key 来构建签名、加密及认证体系](https://zhuanlan.zhihu.com/p/481900853)
+我们把对密钥(Public Key)进行签名叫做 Certify。对于Certify，gpg 提供的命令选项是 --sign-key。
+
+
+
+
+
+引用自[知乎在Github上使用GPG的全过程](https://zhuanlan.zhihu.com/p/76861431)
 
 ***
 #使用GPG密钥进行SSH身份验证
