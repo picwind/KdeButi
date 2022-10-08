@@ -135,12 +135,13 @@ Save changes? (y/N) y
 选定用于SSH的子密钥对
 告诉ssh如何访问gpg-agent
 ###让gpg-agent处理SSH请求
-让gpg-agent处理ssh请求，需要在文件~/.gnupg/gpg-agent.conf添加enable-ssh-support
+***让gpg-agent处理ssh请求***，需要在文件~/.gnupg/gpg-agent.conf添加enable-ssh-support
 ```
 #  ~/.gnupg/gpg-agent.conf
 enable-ssh-support
 ```
 ###选定用于SSH的子密钥对
+***预先指定要用于SSH的密钥，这样就不必使用ssh-add来加载密钥***
 先找密钥对的keygrip
 ```
 gpg2 --list-keys --with-keygrip
@@ -155,10 +156,10 @@ ssb   rsa2048 2019-03-21 [E] [expires: 2021-03-20]
 ssb   rsa2048 2019-03-21 [A]
       Keygrip = 7710BA0643CC022B92544181FF2EAC2A290CDC0E
 ```
-然后将keygrip加入sshcontrol文件
+然后将keygrip加入sshcontrol文件 This file is used when support for the secure shell agent protocol has been enabled (see: [option --enable-ssh-support]). Only keys present in this file are used in the SSH protocol.
 `echo 7710BA0643CC022B92544181FF2EAC2A290CDC0E >> ~/.gnupg/sshcontrol`
 ###告诉ssh如何访问gpg-agent
-最后，通过修改环境变量SSH_AUTH_SOCK, 让SSH知道如何访问gpg-agent，我们可以将下面的代码加入到~/.bashrc或者~/.zshrc中
+最后，通过修改环境变量SSH_AUTH_SOCK, ***让SSH知道如何访问gpg-agent***，我们可以将下面的代码加入到~/.bashrc或者~/.zshrc中
 ```
 export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
 gpgconf --launch gpg-agent
