@@ -143,7 +143,7 @@ enable-ssh-support
 ***预先指定要用于SSH的密钥，这样就不必使用ssh-add来加载密钥***
 先找密钥对的keygrip
 ```
-gpg2 --list-keys --with-keygrip
+gpg --list-keys --with-keygrip
 /home/bexelbie/.gnupg/pubring.kbx
 ------------------------------
 sec   rsa2048 2019-03-21 [SC] [expires: 2021-03-20]
