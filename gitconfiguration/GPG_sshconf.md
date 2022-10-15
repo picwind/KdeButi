@@ -15,7 +15,7 @@ Prints the GPG key ID, in ASCII armor format
 复制以 -----BEGIN PGP PUBLIC KEY BLOCK----- 开头并以 -----END PGP PUBLIC KEY BLOCK----- 结尾的 GPG 密钥。
 将 GPG 密钥新增到 GitHub 帐户。
 ***
-#Telling Git about your GPG key
+# Telling Git about your GPG key
 打开终端。
 使用 gpg --list-secret-keys --keyid-format=long 命令列出你拥有其公钥和私钥的长形式 GPG 密钥。签名提交或标记需要私钥。
 `gpg --list-secret-keys --keyid-format=long`
@@ -64,8 +64,8 @@ Date:   Wed Jul 24 15:58:46 2019 +0800
 引用自[知乎在Github上使用GPG的全过程](https://zhuanlan.zhihu.com/p/76861431)
 
 ***
-#使用GPG密钥进行SSH身份验证
-##创建GPG子密钥对
+# 使用GPG密钥进行SSH身份验证
+## 创建GPG子密钥对
 ```
 gpg2 --expert --edit-key <key ID|Fingerprint|uid>
 gpg> addkey
@@ -80,7 +80,7 @@ Please select what kind of key you want:
   (11) ECC (set your own capabilities)
   (12) ECC (encrypt only)
   (13) Existing key
-Your selection? 8
+Your selection? 8/11(ed25519 4096)
 
 Possible actions for a RSA key: Sign Encrypt Authenticate
 Current allowed actions: Sign Encrypt
@@ -129,18 +129,17 @@ ssb  rsa2048/17E7403F18CB1123
 gpg> quit
 Save changes? (y/N) y
 ```
-##启用GPG子密钥对
+## 启用GPG子密钥对
 启用GPG子密钥对用于SSH身份验证步骤如下：
 让gpg-agent处理SSH请求
 选定用于SSH的子密钥对
 告诉ssh如何访问gpg-agent
-###让gpg-agent处理SSH请求
+### 让gpg-agent处理SSH请求
 ***让gpg-agent处理ssh请求***，需要在文件~/.gnupg/gpg-agent.conf添加enable-ssh-support
 ```
-#  ~/.gnupg/gpg-agent.conf
 enable-ssh-support
 ```
-###选定用于SSH的子密钥对
+### 选定用于SSH的子密钥对
 ***预先指定要用于SSH的密钥，这样就不必使用ssh-add来加载密钥***
 先找密钥对的keygrip
 ```
@@ -158,14 +157,34 @@ ssb   rsa2048 2019-03-21 [A]
 ```
 然后将keygrip加入sshcontrol文件 This file is used when support for the secure shell agent protocol has been enabled (see: [option --enable-ssh-support]). Only keys present in this file are used in the SSH protocol.
 `echo 7710BA0643CC022B92544181FF2EAC2A290CDC0E >> ~/.gnupg/sshcontrol`
-###告诉ssh如何访问gpg-agent
+### 告诉ssh如何访问gpg-agent
 最后，通过修改环境变量SSH_AUTH_SOCK, ***让SSH知道如何访问gpg-agent***，我们可以将下面的代码加入到~/.bashrc或者~/.zshrc中
 ```
-export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
-gpgconf --launch gpg-agent
+unset SSH_AGENT_PID #使openssh无法找到ssh-agent
+if [ "${gnupg_SSH_AUTH_SOCK_by:-0}" -ne $$ ]; then
+  export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
+fi
+#设置环境变量SSH_AUTH_SOCK告诉ssh如何访问gpg-agent,gpgconf这条命令列出gpg-agent的ssh-socket所在目录,两个应用程序之间的通讯使用socket
+#这个判断包含gnupg_SSH_AUTH_SOCK_by变量，如果agent是作为gpg-agent --daemon /bin/sh命令开始的，那么打开的shell会从父进程gpg-agent继承SSH_AUTH_SOCK变量,若继承则该变量值应等于shellPID,不需要导入环境变量SSH_AUTH_SOCK,若该变量为0则需要设置环境变量。[参考ARCHWIKI](https://wiki.archlinux.org/title/GnuPG)[source code reference](https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=commit;h=36ba7845995dd3caf8faeec3e09b3ffb879fc29b)
+#gpg-agent --daemon /bin/sh 命令, 由于daemon类的守护进程会有一个瞬间退出的中间父进程(如本例中即forking为gpg-agent的进程)。创建一个新进程作为gpg-agent（会瞬间退出）的子进程。这种方式获得一个配置好环境的sehll,在退出shell后，gpg-agent也会在数秒后退出。gpg-agent(exit)——shell——gpg-agent
+
+export GPG_TTY=$(tty) #配置pinentry使用正确的tty,tty命令输出当前tty，设置GPG_TTY环境变量
+gpg-connect-agent updatestartuptty /bye > /dev/null
+#更新启动tty 由于ssh代理协议不包含一种机制来辨别代理在哪个display/终端上运行，因此gpg代理的ssh支持将使用启动gpg代理时的TTY或X display。要将此display/tty切换到当前的display/tty，可以使用以上命令。 man gpg-agent
+#updatestartuptty 将启动TTY和X-DISPLAY变量设置为此会话(shell会话）的值。此命令用于将未来的pinentry调用定向到另一个屏幕。之所以需要它，是因为在ssh代理协议中无法传递此信息。
 ```
-###分享ssh公钥
+[daemon forking资料](https://blog.csdn.net/icandoit_2014/article/details/121467310)
+### 检查ssh公钥
 最后，用ssh-add -L找到对应的公钥
-`ssh-add -L`
+`ssh-add -L`检查ssh key是否存在
+使用`gpg --export-ssh-key uid/keyid`导出ssh公钥
+复制terminal输出内容
 添加到github
+
+
+### 测试连接github
+```
+ssh -T git@github.com
+Hi picwind! You've successfully authenticated, but GitHub does not provide shell access.
+```
 
