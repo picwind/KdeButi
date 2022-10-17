@@ -165,9 +165,9 @@ if [ "${gnupg_SSH_AUTH_SOCK_by:-0}" -ne $$ ]; then
   export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
 fi
 #设置环境变量SSH_AUTH_SOCK告诉ssh如何访问gpg-agent,gpgconf这条命令列出gpg-agent的ssh-socket所在目录,两个应用程序之间的通讯使用socket
-#这个判断包含gnupg_SSH_AUTH_SOCK_by变量，如果agent是作为gpg-agent --daemon /bin/sh命令开始的，那么打开的shell会从父进程gpg-agent继承SSH_AUTH_SOCK变量,若继承则该变量值应等于shellPID,不需要导入环境变量SSH_AUTH_SOCK,若该变量为0则需要设置环境变量。[参考ARCHWIKI](https://wiki.archlinux.org/title/GnuPG)[source code reference](https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=commit;h=36ba7845995dd3caf8faeec3e09b3ffb879fc29b)
+#这个判断包含gnupg_SSH_AUTH_SOCK_by变量，如果agent是作为gpg-agent --daemon /bin/bash命令开始的，那么打开的shell会从父进程gpg-agent继承SSH_AUTH_SOCK变量,若继承则该变量值应等于shellPID,不需要导入环境变量SSH_AUTH_SOCK,若该变量为0则需要设置环境变量。[参考ARCHWIKI](https://wiki.archlinux.org/title/GnuPG)[source code reference](https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=commit;h=36ba7845995dd3caf8faeec3e09b3ffb879fc29b)
 #gpg-agent --daemon /bin/sh 命令, 由于daemon类的守护进程会有一个瞬间退出的中间父进程(如本例中即forking为gpg-agent的进程)。创建一个新进程作为gpg-agent（会瞬间退出）的子进程。这种方式获得一个配置好环境的sehll,在退出shell后，gpg-agent也会在数秒后退出。gpg-agent(exit)——shell——gpg-agent
-
+#如果gpg-agent被命令gpg-agent --enable-ssh-support --daemon /bin/bash唤起，则环境变量SSH_AUTH_SOCK将无法被否决（改变），因此需要初始化脚本进行检测是否用以上命令启用gpg-agent。
 export GPG_TTY=$(tty) #配置pinentry使用正确的tty,tty命令输出当前tty，设置GPG_TTY环境变量
 gpg-connect-agent updatestartuptty /bye > /dev/null
 #更新启动tty 由于ssh代理协议不包含一种机制来辨别代理在哪个display/终端上运行，因此gpg代理的ssh支持将使用启动gpg代理时的TTY或X display。要将此display/tty切换到当前的display/tty，可以使用以上命令。 man gpg-agent
